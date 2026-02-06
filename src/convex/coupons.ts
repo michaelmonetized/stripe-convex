@@ -1,19 +1,57 @@
+/**
+ * @module stripe-convex/convex/coupons
+ * @description Coupon validation, calculation, and usage tracking utilities
+ */
+
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
 import type { CouponRule, AppliedCoupon } from "../types/index.js";
 
 /**
- * Validate and apply a coupon code
- * Returns the applied coupon details or null if invalid
+ * Validates a coupon against order parameters and usage limits.
+ * 
+ * Checks performed:
+ * - Coupon is active
+ * - Not expired
+ * - Global usage limit not reached
+ * - Per-email usage limit not reached
+ * - Minimum order amount met
+ * - Subscription/one-time restrictions
+ * - Plan restrictions
+ * 
+ * @param coupon - Coupon rule to validate
+ * @param params - Order parameters and usage counts
+ * @returns Validation result with error message if invalid
+ * 
+ * @example
+ * ```ts
+ * const result = validateCoupon(couponRule, {
+ *   email: "customer@example.com",
+ *   orderAmount: 5000, // $50.00
+ *   isSubscription: false,
+ *   currentUsage: 5,
+ *   emailUsage: 0,
+ * });
+ * 
+ * if (!result.valid) {
+ *   console.error(result.error);
+ * }
+ * ```
  */
 export function validateCoupon(
   coupon: CouponRule,
   params: {
+    /** Customer email */
     email: string;
+    /** Order amount in cents */
     orderAmount: number;
+    /** Whether order contains subscriptions */
     isSubscription: boolean;
+    /** Plan ID if applicable */
     planId?: string;
+    /** Current global usage count */
     currentUsage: number;
+    /** Usage count for this email */
     emailUsage: number;
   }
 ): { valid: boolean; error?: string } {
@@ -76,7 +114,29 @@ export function validateCoupon(
 }
 
 /**
- * Calculate discount amount
+ * Calculates the discount amount for a coupon.
+ * 
+ * For percentage discounts, calculates the percentage of the order amount.
+ * For fixed discounts, returns the fixed amount (capped at order amount).
+ * 
+ * @param coupon - Coupon rule
+ * @param orderAmount - Order amount in cents
+ * @returns Discount amount in cents
+ * 
+ * @example
+ * ```ts
+ * // 20% off $50 order = $10 discount
+ * const discount = calculateDiscount(
+ *   { code: "SAVE20", discountType: "percentage", discountValue: 20 },
+ *   5000
+ * ); // Returns 1000
+ * 
+ * // $15 off $10 order = $10 discount (capped)
+ * const discount2 = calculateDiscount(
+ *   { code: "FLAT15", discountType: "fixed", discountValue: 1500 },
+ *   1000
+ * ); // Returns 1000
+ * ```
  */
 export function calculateDiscount(
   coupon: CouponRule,
@@ -91,7 +151,29 @@ export function calculateDiscount(
 }
 
 /**
- * Apply coupon and get result
+ * Validates a coupon and returns the applied coupon details.
+ * Combines validateCoupon and calculateDiscount into a single call.
+ * 
+ * @param coupon - Coupon rule
+ * @param params - Order parameters and usage counts
+ * @returns Applied coupon details or error object
+ * 
+ * @example
+ * ```ts
+ * const result = applyCouponToOrder(couponRule, {
+ *   email: "customer@example.com",
+ *   orderAmount: 5000,
+ *   isSubscription: false,
+ *   currentUsage: 0,
+ *   emailUsage: 0,
+ * });
+ * 
+ * if ("error" in result) {
+ *   console.error(result.error);
+ * } else {
+ *   console.log(`Discount: ${result.discountAmount}`);
+ * }
+ * ```
  */
 export function applyCouponToOrder(
   coupon: CouponRule,
@@ -120,12 +202,17 @@ export function applyCouponToOrder(
   };
 }
 
+/**
+ * Formats cents as a currency string.
+ * @internal
+ */
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 /**
- * Record coupon usage
+ * Records a coupon usage in the database.
+ * Call this after a successful order to track usage limits.
  */
 export const recordUsage = {
   args: {
@@ -134,6 +221,11 @@ export const recordUsage = {
     orderId: v.id("sc_orders"),
     discountAmount: v.number(),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Coupon usage details
+   * @returns ID of the created usage record
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { code: string; email: string; orderId: any; discountAmount: number }
@@ -150,10 +242,15 @@ export const recordUsage = {
 };
 
 /**
- * Get coupon usage count
+ * Gets the global usage count for a coupon code.
  */
 export const getUsageCount = {
   args: { code: v.string() },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Coupon code
+   * @returns Total number of times coupon has been used
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { code: string }
@@ -168,13 +265,18 @@ export const getUsageCount = {
 };
 
 /**
- * Get coupon usage count for specific email
+ * Gets the usage count for a coupon code by a specific email.
  */
 export const getEmailUsageCount = {
   args: {
     code: v.string(),
     email: v.string(),
   },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Coupon code and email
+   * @returns Number of times this email has used this coupon
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { code: string; email: string }

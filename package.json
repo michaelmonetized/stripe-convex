@@ -1,7 +1,7 @@
 {
   "name": "stripe-convex",
   "version": "0.1.0",
-  "description": "Reusable Stripe + Convex payment system with email-based tracking",
+  "description": "A reusable Stripe + Convex payment system with email-based tracking, cart functionality, and TypeScript-first coupon system",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -22,28 +22,49 @@
   },
   "files": [
     "dist",
-    "convex"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "prepublishOnly": "bun run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
   },
   "keywords": [
     "stripe",
     "convex",
     "payments",
     "subscriptions",
+    "checkout",
+    "ecommerce",
+    "cart",
+    "coupons",
     "react",
-    "typescript"
+    "typescript",
+    "saas",
+    "billing"
   ],
-  "author": "",
+  "author": "Michael Shilman",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shilman/stripe-convex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shilman/stripe-convex/issues"
+  },
+  "homepage": "https://github.com/shilman/stripe-convex#readme",
   "peerDependencies": {
     "convex": ">=1.0.0",
     "react": ">=18.0.0",
     "stripe": ">=14.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/bun": "^1.3.8",
@@ -55,5 +76,8 @@
     "convex": "^1.31.7",
     "react": "^19.2.4",
     "stripe": "^20.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

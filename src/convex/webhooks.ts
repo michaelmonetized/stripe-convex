@@ -1,15 +1,36 @@
+/**
+ * @module stripe-convex/convex/webhooks
+ * @description Stripe webhook event handlers with idempotency support
+ */
+
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericDataModel } from "convex/server";
 
 /**
- * Check if a webhook event has already been processed (idempotency)
+ * Checks if a webhook event has already been processed.
+ * Use this for idempotency to prevent duplicate processing.
+ * 
+ * @example
+ * ```ts
+ * const processed = await webhooks.hasProcessedEvent.handler(ctx, {
+ *   stripeEventId: event.id,
+ * });
+ * if (processed) {
+ *   return new Response("Already processed", { status: 200 });
+ * }
+ * ```
  */
 export const hasProcessedEvent = {
   args: { stripeEventId: v.string() },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Stripe event ID
+   * @returns True if event has been processed
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { stripeEventId: string }
-  ) => {
+  ): Promise<boolean> => {
     const db = ctx.db as any;
     const event = await db
       .query("sc_webhook_events")
@@ -22,7 +43,17 @@ export const hasProcessedEvent = {
 };
 
 /**
- * Record a webhook event
+ * Records a webhook event for tracking and debugging.
+ * Call this when you receive an event, before processing.
+ * 
+ * @example
+ * ```ts
+ * await webhooks.recordEvent.handler(ctx, {
+ *   stripeEventId: event.id,
+ *   type: event.type,
+ *   data: event.data.object,
+ * });
+ * ```
  */
 export const recordEvent = {
   args: {
@@ -30,6 +61,11 @@ export const recordEvent = {
     type: v.string(),
     data: v.any(),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Event details
+   * @returns Event document ID
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { stripeEventId: string; type: string; data: any }
@@ -58,13 +94,34 @@ export const recordEvent = {
 };
 
 /**
- * Mark event as processed
+ * Marks a webhook event as processed.
+ * Call this after successfully handling an event.
+ * 
+ * @example
+ * ```ts
+ * // After processing...
+ * await webhooks.markProcessed.handler(ctx, {
+ *   stripeEventId: event.id,
+ * });
+ * 
+ * // On error...
+ * await webhooks.markProcessed.handler(ctx, {
+ *   stripeEventId: event.id,
+ *   error: "Processing failed: insufficient inventory",
+ * });
+ * ```
  */
 export const markProcessed = {
   args: {
     stripeEventId: v.string(),
     error: v.optional(v.string()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Event ID and optional error
+   * @returns Event document ID
+   * @throws Error if event not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { stripeEventId: string; error?: string }
@@ -91,7 +148,17 @@ export const markProcessed = {
 };
 
 /**
- * Process checkout.session.completed event
+ * Processes a checkout.session.completed webhook event.
+ * Creates payment/subscription records and updates customer data.
+ * 
+ * @example
+ * ```ts
+ * // In your webhook handler
+ * if (event.type === "checkout.session.completed") {
+ *   const data = processWebhookEvent(event);
+ *   await webhooks.processCheckoutCompleted.handler(ctx, data.data);
+ * }
+ * ```
  */
 export const processCheckoutCompleted = {
   args: {
@@ -103,6 +170,11 @@ export const processCheckoutCompleted = {
     currency: v.string(),
     metadata: v.optional(v.any()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Checkout session data
+   * @returns Object with type (payment/subscription) and created ID
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -206,7 +278,8 @@ export const processCheckoutCompleted = {
 };
 
 /**
- * Process subscription update event
+ * Processes a customer.subscription.updated webhook event.
+ * Updates subscription status and billing period.
  */
 export const processSubscriptionUpdate = {
   args: {
@@ -216,6 +289,11 @@ export const processSubscriptionUpdate = {
     currentPeriodEnd: v.number(),
     cancelAtPeriodEnd: v.optional(v.boolean()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Subscription update data
+   * @returns Subscription document ID or null if not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -262,10 +340,16 @@ export const processSubscriptionUpdate = {
 };
 
 /**
- * Process subscription deleted event
+ * Processes a customer.subscription.deleted webhook event.
+ * Marks the subscription as cancelled.
  */
 export const processSubscriptionDeleted = {
   args: { stripeSubscriptionId: v.string() },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Stripe subscription ID
+   * @returns Subscription document ID or null if not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { stripeSubscriptionId: string }
@@ -293,13 +377,19 @@ export const processSubscriptionDeleted = {
 };
 
 /**
- * Process refund event
+ * Processes a charge.refunded webhook event.
+ * Marks the associated payment as refunded.
  */
 export const processRefund = {
   args: {
     chargeId: v.string(),
     paymentIntentId: v.optional(v.string()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Charge ID and optional payment intent ID
+   * @returns Payment document ID or null if not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { chargeId: string; paymentIntentId?: string }

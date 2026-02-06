@@ -1,9 +1,25 @@
+/**
+ * @module stripe-convex/convex/payments
+ * @description Payment record management utilities
+ */
+
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
 import { paymentStatusValidator } from "./schema.js";
 
 /**
- * Create a new payment record
+ * Creates a new payment record.
+ * Typically called when initiating a payment flow.
+ * 
+ * @example
+ * ```ts
+ * const paymentId = await payments.create.handler(ctx, {
+ *   email: "customer@example.com",
+ *   amount: 1999, // $19.99
+ *   currency: "usd",
+ *   stripePaymentIntentId: "pi_1234567890",
+ * });
+ * ```
  */
 export const create = {
   args: {
@@ -15,6 +31,11 @@ export const create = {
     discountAmount: v.optional(v.number()),
     metadata: v.optional(v.any()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Payment details
+   * @returns Payment document ID
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -46,7 +67,17 @@ export const create = {
 };
 
 /**
- * Update payment status
+ * Updates the status of a payment by Stripe PaymentIntent ID.
+ * Called from webhook handlers when payment status changes.
+ * 
+ * @example
+ * ```ts
+ * await payments.updateStatus.handler(ctx, {
+ *   stripePaymentIntentId: "pi_1234567890",
+ *   status: "succeeded",
+ *   stripeChargeId: "ch_1234567890",
+ * });
+ * ```
  */
 export const updateStatus = {
   args: {
@@ -54,6 +85,12 @@ export const updateStatus = {
     status: paymentStatusValidator,
     stripeChargeId: v.optional(v.string()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Payment intent ID and new status
+   * @returns Payment document ID
+   * @throws Error if payment not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -88,13 +125,33 @@ export const updateStatus = {
 };
 
 /**
- * Get payments by email
+ * Gets all payments for an email address.
+ * Optionally filter by payment status.
+ * 
+ * @example
+ * ```ts
+ * // Get all payments
+ * const allPayments = await payments.getByEmail.handler(ctx, {
+ *   email: "customer@example.com",
+ * });
+ * 
+ * // Get only successful payments
+ * const successfulPayments = await payments.getByEmail.handler(ctx, {
+ *   email: "customer@example.com",
+ *   status: "succeeded",
+ * });
+ * ```
  */
 export const getByEmail = {
   args: {
     email: v.string(),
     status: v.optional(paymentStatusValidator),
   },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Email and optional status filter
+   * @returns Array of payment documents
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { email: string; status?: string }
@@ -114,10 +171,22 @@ export const getByEmail = {
 };
 
 /**
- * Get payment by Stripe payment intent ID
+ * Gets a payment by Stripe PaymentIntent ID.
+ * 
+ * @example
+ * ```ts
+ * const payment = await payments.getByPaymentIntent.handler(ctx, {
+ *   stripePaymentIntentId: "pi_1234567890",
+ * });
+ * ```
  */
 export const getByPaymentIntent = {
   args: { stripePaymentIntentId: v.string() },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Stripe PaymentIntent ID
+   * @returns Payment document or null if not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { stripePaymentIntentId: string }
@@ -133,14 +202,30 @@ export const getByPaymentIntent = {
 };
 
 /**
- * Check if email has any successful payments
+ * Checks if an email has any successful payments.
+ * Useful for basic access control without plan-specific logic.
+ * 
+ * @example
+ * ```ts
+ * const hasPaid = await payments.hasSuccessfulPayment.handler(ctx, {
+ *   email: "customer@example.com",
+ * });
+ * if (hasPaid) {
+ *   // Grant access
+ * }
+ * ```
  */
 export const hasSuccessfulPayment = {
   args: { email: v.string() },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Customer email
+   * @returns True if customer has at least one successful payment
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { email: string }
-  ) => {
+  ): Promise<boolean> => {
     const db = ctx.db as any;
     const payments = await db
       .query("sc_payments")

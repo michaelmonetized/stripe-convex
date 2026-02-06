@@ -1,20 +1,56 @@
+/**
+ * @module stripe-convex/convex/stripe
+ * @description Stripe API utilities for checkout, payments, and subscriptions
+ */
+
 import Stripe from "stripe";
 import type { CartItem, AppliedCoupon } from "../types/index.js";
 
+/**
+ * Parameters for creating a Stripe checkout session.
+ */
 export interface CreateCheckoutParams {
+  /** Customer email address */
   email: string;
+  /** Cart items to checkout */
   items: CartItem[];
+  /** URL to redirect to after successful payment */
   successUrl: string;
+  /** URL to redirect to if payment is cancelled */
   cancelUrl: string;
+  /** Applied coupon details */
   coupon?: AppliedCoupon;
+  /** Additional metadata to attach to the session */
   metadata?: Record<string, string>;
+  /** Whether this checkout contains a subscription */
   isSubscription?: boolean;
+  /** Plan ID for subscription checkouts */
   planId?: string;
 }
 
 /**
- * Create a Stripe checkout session
- * This should be called from a Convex action (not mutation)
+ * Creates a Stripe Checkout Session for processing payments.
+ * 
+ * This should be called from a Convex action (not mutation) since it
+ * makes external API calls to Stripe.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param params - Checkout session parameters
+ * @returns Stripe Checkout Session with redirect URL
+ * 
+ * @example
+ * ```ts
+ * const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+ * const session = await createCheckoutSession(stripe, {
+ *   email: "customer@example.com",
+ *   items: [{ id: "1", title: "Pro Plan", price: 1999, quantity: 1, isSubscription: true }],
+ *   successUrl: "https://example.com/success",
+ *   cancelUrl: "https://example.com/cancel",
+ *   isSubscription: true,
+ *   planId: "pro",
+ * });
+ * // Redirect user to session.url
+ * ```
  */
 export async function createCheckoutSession(
   stripe: Stripe,
@@ -72,7 +108,22 @@ export async function createCheckoutSession(
 }
 
 /**
- * Create a payment intent for direct payment (without checkout)
+ * Creates a Stripe PaymentIntent for direct payment processing.
+ * Use this for custom payment flows instead of Checkout.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param params - Payment intent parameters
+ * @returns Stripe PaymentIntent with client_secret for frontend
+ * 
+ * @example
+ * ```ts
+ * const paymentIntent = await createPaymentIntent(stripe, {
+ *   email: "customer@example.com",
+ *   amount: 1999, // $19.99
+ *   currency: "usd",
+ * });
+ * // Use paymentIntent.client_secret on frontend with Stripe.js
+ * ```
  */
 export async function createPaymentIntent(
   stripe: Stripe,
@@ -111,7 +162,20 @@ export async function createPaymentIntent(
 }
 
 /**
- * Create a subscription
+ * Creates a Stripe subscription for a customer.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param params - Subscription parameters
+ * @returns Stripe Subscription object
+ * 
+ * @example
+ * ```ts
+ * const subscription = await createSubscription(stripe, {
+ *   email: "customer@example.com",
+ *   priceId: "price_1234567890", // Stripe Price ID
+ *   trialDays: 14, // Optional trial period
+ * });
+ * ```
  */
 export async function createSubscription(
   stripe: Stripe,
@@ -150,7 +214,21 @@ export async function createSubscription(
 }
 
 /**
- * Cancel a subscription
+ * Cancels a Stripe subscription.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param subscriptionId - Stripe Subscription ID
+ * @param atPeriodEnd - If true, cancel at end of billing period (default: true)
+ * @returns Updated Stripe Subscription
+ * 
+ * @example
+ * ```ts
+ * // Cancel immediately
+ * await cancelSubscription(stripe, "sub_1234567890", false);
+ * 
+ * // Cancel at end of billing period
+ * await cancelSubscription(stripe, "sub_1234567890", true);
+ * ```
  */
 export async function cancelSubscription(
   stripe: Stripe,
@@ -166,7 +244,11 @@ export async function cancelSubscription(
 }
 
 /**
- * Get subscription details
+ * Retrieves a Stripe subscription by ID.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param subscriptionId - Stripe Subscription ID
+ * @returns Stripe Subscription object
  */
 export async function getSubscription(
   stripe: Stripe,
@@ -176,7 +258,24 @@ export async function getSubscription(
 }
 
 /**
- * Verify webhook signature
+ * Verifies the signature of a Stripe webhook request.
+ * 
+ * @param stripe - Initialized Stripe client
+ * @param payload - Raw request body
+ * @param signature - Stripe-Signature header value
+ * @param webhookSecret - Webhook endpoint secret from Stripe Dashboard
+ * @returns Verified Stripe Event
+ * @throws Error if signature verification fails
+ * 
+ * @example
+ * ```ts
+ * const event = verifyWebhookSignature(
+ *   stripe,
+ *   request.body,
+ *   request.headers["stripe-signature"],
+ *   process.env.STRIPE_WEBHOOK_SECRET
+ * );
+ * ```
  */
 export function verifyWebhookSignature(
   stripe: Stripe,
@@ -188,8 +287,31 @@ export function verifyWebhookSignature(
 }
 
 /**
- * Process a Stripe webhook event
- * Returns the processed data to be stored in Convex
+ * Processes a Stripe webhook event and extracts relevant data.
+ * 
+ * Supported events:
+ * - `checkout.session.completed` - Checkout completed
+ * - `customer.subscription.created` - New subscription
+ * - `customer.subscription.updated` - Subscription updated
+ * - `customer.subscription.deleted` - Subscription cancelled
+ * - `payment_intent.succeeded` - Payment successful
+ * - `payment_intent.payment_failed` - Payment failed
+ * - `charge.refunded` - Payment refunded
+ * 
+ * @param event - Stripe Event from webhook
+ * @returns Processed event data or null if event type not supported
+ * 
+ * @example
+ * ```ts
+ * const eventData = processWebhookEvent(event);
+ * if (eventData) {
+ *   switch (event.type) {
+ *     case "checkout.session.completed":
+ *       await handleCheckoutCompleted(eventData.data);
+ *       break;
+ *   }
+ * }
+ * ```
  */
 export function processWebhookEvent(event: Stripe.Event): {
   type: string;

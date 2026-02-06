@@ -1,9 +1,26 @@
+/**
+ * @module stripe-convex/convex/subscriptions
+ * @description Subscription record management utilities
+ */
+
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
 import { subscriptionStatusValidator } from "./schema.js";
 
 /**
- * Create a new subscription record
+ * Creates a new subscription record.
+ * Typically called when a new subscription is created via Stripe.
+ * 
+ * @example
+ * ```ts
+ * const subscriptionId = await subscriptions.create.handler(ctx, {
+ *   email: "customer@example.com",
+ *   planId: "pro",
+ *   stripeSubscriptionId: "sub_1234567890",
+ *   currentPeriodStart: Date.now(),
+ *   currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000,
+ * });
+ * ```
  */
 export const create = {
   args: {
@@ -15,6 +32,11 @@ export const create = {
     currentPeriodEnd: v.number(),
     metadata: v.optional(v.any()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Subscription details
+   * @returns Subscription document ID
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -46,7 +68,17 @@ export const create = {
 };
 
 /**
- * Update subscription from Stripe webhook
+ * Updates a subscription from Stripe webhook data.
+ * Called from webhook handlers when subscription status changes.
+ * 
+ * @example
+ * ```ts
+ * await subscriptions.updateFromStripe.handler(ctx, {
+ *   stripeSubscriptionId: "sub_1234567890",
+ *   status: "past_due",
+ *   currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000,
+ * });
+ * ```
  */
 export const updateFromStripe = {
   args: {
@@ -58,6 +90,12 @@ export const updateFromStripe = {
     cancelledAt: v.optional(v.number()),
     planId: v.optional(v.string()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Subscription updates
+   * @returns Subscription document ID
+   * @throws Error if subscription not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: {
@@ -96,13 +134,33 @@ export const updateFromStripe = {
 };
 
 /**
- * Get subscriptions by email
+ * Gets all subscriptions for an email address.
+ * Optionally filter to only active subscriptions.
+ * 
+ * @example
+ * ```ts
+ * // Get all subscriptions
+ * const allSubs = await subscriptions.getByEmail.handler(ctx, {
+ *   email: "customer@example.com",
+ * });
+ * 
+ * // Get only active subscriptions
+ * const activeSubs = await subscriptions.getByEmail.handler(ctx, {
+ *   email: "customer@example.com",
+ *   activeOnly: true,
+ * });
+ * ```
  */
 export const getByEmail = {
   args: {
     email: v.string(),
     activeOnly: v.optional(v.boolean()),
   },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Email and optional active filter
+   * @returns Array of subscription documents
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { email: string; activeOnly?: boolean }
@@ -123,10 +181,22 @@ export const getByEmail = {
 };
 
 /**
- * Get subscription by Stripe subscription ID
+ * Gets a subscription by Stripe subscription ID.
+ * 
+ * @example
+ * ```ts
+ * const subscription = await subscriptions.getByStripeId.handler(ctx, {
+ *   stripeSubscriptionId: "sub_1234567890",
+ * });
+ * ```
  */
 export const getByStripeId = {
   args: { stripeSubscriptionId: v.string() },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Stripe subscription ID
+   * @returns Subscription document or null if not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { stripeSubscriptionId: string }
@@ -142,17 +212,36 @@ export const getByStripeId = {
 };
 
 /**
- * Check if email has active subscription to a plan
+ * Checks if an email has an active subscription to a plan.
+ * 
+ * @example
+ * ```ts
+ * // Check for any active subscription
+ * const hasAnySub = await subscriptions.hasActivePlan.handler(ctx, {
+ *   email: "customer@example.com",
+ * });
+ * 
+ * // Check for specific plan
+ * const hasProPlan = await subscriptions.hasActivePlan.handler(ctx, {
+ *   email: "customer@example.com",
+ *   planId: "pro",
+ * });
+ * ```
  */
 export const hasActivePlan = {
   args: {
     email: v.string(),
     planId: v.optional(v.string()),
   },
+  /**
+   * @param ctx - Convex query context
+   * @param args - Email and optional plan ID
+   * @returns True if customer has an active subscription (to the specified plan if provided)
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericQueryCtx<DataModel>,
     args: { email: string; planId?: string }
-  ) => {
+  ): Promise<boolean> => {
     const db = ctx.db as any;
     const subscriptions = await db
       .query("sc_subscriptions")
@@ -172,13 +261,35 @@ export const hasActivePlan = {
 };
 
 /**
- * Cancel subscription
+ * Cancels a subscription.
+ * Can cancel immediately or at the end of the billing period.
+ * 
+ * @example
+ * ```ts
+ * // Cancel at end of period
+ * await subscriptions.cancel.handler(ctx, {
+ *   stripeSubscriptionId: "sub_1234567890",
+ *   cancelAtPeriodEnd: true,
+ * });
+ * 
+ * // Cancel immediately
+ * await subscriptions.cancel.handler(ctx, {
+ *   stripeSubscriptionId: "sub_1234567890",
+ *   cancelAtPeriodEnd: false,
+ * });
+ * ```
  */
 export const cancel = {
   args: {
     stripeSubscriptionId: v.string(),
     cancelAtPeriodEnd: v.optional(v.boolean()),
   },
+  /**
+   * @param ctx - Convex mutation context
+   * @param args - Stripe subscription ID and cancellation mode
+   * @returns Subscription document ID
+   * @throws Error if subscription not found
+   */
   handler: async <DataModel extends GenericDataModel>(
     ctx: GenericMutationCtx<DataModel>,
     args: { stripeSubscriptionId: string; cancelAtPeriodEnd?: boolean }

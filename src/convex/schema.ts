@@ -1,14 +1,15 @@
+/**
+ * @module stripe-convex/convex/schema
+ * @description Convex schema definitions for stripe-convex tables
+ */
+
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 /**
- * Convex schema for stripe-convex package.
- * 
- * To use in your project, either:
- * 1. Copy these table definitions to your schema.ts
- * 2. Or import and spread: { ...stripeConvexTables }
+ * Validator for payment status field.
+ * @internal
  */
-
 export const paymentStatusValidator = v.union(
   v.literal("pending"),
   v.literal("processing"),
@@ -18,6 +19,10 @@ export const paymentStatusValidator = v.union(
   v.literal("cancelled")
 );
 
+/**
+ * Validator for subscription status field.
+ * @internal
+ */
 export const subscriptionStatusValidator = v.union(
   v.literal("active"),
   v.literal("past_due"),
@@ -27,6 +32,10 @@ export const subscriptionStatusValidator = v.union(
   v.literal("paused")
 );
 
+/**
+ * Validator for order status field.
+ * @internal
+ */
 export const orderStatusValidator = v.union(
   v.literal("pending"),
   v.literal("completed"),
@@ -34,6 +43,10 @@ export const orderStatusValidator = v.union(
   v.literal("cancelled")
 );
 
+/**
+ * Validator for cart item objects.
+ * @internal
+ */
 export const cartItemValidator = v.object({
   id: v.string(),
   title: v.string(),
@@ -45,9 +58,39 @@ export const cartItemValidator = v.object({
   isSubscription: v.optional(v.boolean()),
 });
 
-// Table definitions that can be spread into your schema
+/**
+ * Convex table definitions for stripe-convex.
+ * 
+ * Spread these into your schema to add all required tables:
+ * 
+ * @example
+ * ```ts
+ * // convex/schema.ts
+ * import { defineSchema } from "convex/server";
+ * import { stripeConvexTables } from "stripe-convex/convex";
+ * 
+ * export default defineSchema({
+ *   // Your existing tables...
+ *   users: defineTable({ ... }),
+ *   
+ *   // Add stripe-convex tables
+ *   ...stripeConvexTables,
+ * });
+ * ```
+ * 
+ * Tables included:
+ * - `sc_customers` - Customer records indexed by email
+ * - `sc_payments` - One-time payment records
+ * - `sc_subscriptions` - Subscription records
+ * - `sc_orders` - Order records linking payments to cart items
+ * - `sc_coupon_usage` - Coupon usage tracking
+ * - `sc_webhook_events` - Webhook event log for idempotency
+ */
 export const stripeConvexTables = {
-  // Customers - indexed by email for quick lookups
+  /**
+   * Customers table - indexed by email for quick lookups.
+   * All payments and subscriptions are linked via email address.
+   */
   sc_customers: defineTable({
     email: v.string(),
     stripeCustomerId: v.optional(v.string()),
@@ -59,7 +102,9 @@ export const stripeConvexTables = {
     .index("by_email", ["email"])
     .index("by_stripe_customer", ["stripeCustomerId"]),
 
-  // Payments - one-time payments
+  /**
+   * Payments table - one-time payment records.
+   */
   sc_payments: defineTable({
     email: v.string(),
     amount: v.number(),
@@ -77,7 +122,9 @@ export const stripeConvexTables = {
     .index("by_stripe_payment_intent", ["stripePaymentIntentId"])
     .index("by_status", ["status"]),
 
-  // Subscriptions
+  /**
+   * Subscriptions table - recurring subscription records.
+   */
   sc_subscriptions: defineTable({
     email: v.string(),
     planId: v.string(),
@@ -98,7 +145,9 @@ export const stripeConvexTables = {
     .index("by_status", ["status"])
     .index("by_email_status", ["email", "status"]),
 
-  // Orders - tracks cart checkouts
+  /**
+   * Orders table - tracks cart checkouts with line items.
+   */
   sc_orders: defineTable({
     email: v.string(),
     items: v.array(cartItemValidator),
@@ -116,7 +165,9 @@ export const stripeConvexTables = {
     .index("by_email", ["email"])
     .index("by_status", ["status"]),
 
-  // Coupon usage tracking
+  /**
+   * Coupon usage table - tracks coupon redemptions for limits.
+   */
   sc_coupon_usage: defineTable({
     code: v.string(),
     email: v.string(),
@@ -128,7 +179,9 @@ export const stripeConvexTables = {
     .index("by_email", ["email"])
     .index("by_code_email", ["code", "email"]),
 
-  // Webhook event log (for idempotency)
+  /**
+   * Webhook events table - for idempotent webhook processing.
+   */
   sc_webhook_events: defineTable({
     stripeEventId: v.string(),
     type: v.string(),
@@ -141,5 +194,8 @@ export const stripeConvexTables = {
     .index("by_type", ["type"]),
 };
 
-// Full schema for standalone use
+/**
+ * Full schema for standalone use (testing/development).
+ * In production, spread `stripeConvexTables` into your own schema.
+ */
 export default defineSchema(stripeConvexTables);
