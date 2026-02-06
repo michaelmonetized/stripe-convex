@@ -21,8 +21,8 @@ Designed to be imported into other projects.
 ## Goals
 
 ### Short-term (1-2 weeks)
-- [ ] Complete documentation
-- [ ] Usage examples
+- [x] Complete documentation (7 files)
+- [x] Usage examples (in /example and docs)
 - [ ] Test in multiple projects
 
 ### Medium-term (1 month)
@@ -39,7 +39,7 @@ Designed to be imported into other projects.
 - [x] Core payment processing
 - [x] Email-based tracking
 - [x] Convex integration
-- [ ] Documentation
+- [x] Documentation (complete)
 - [ ] NPM publish
 - [ ] Integration into main projects (getat.me, hustlelaunch, etc.)
 
