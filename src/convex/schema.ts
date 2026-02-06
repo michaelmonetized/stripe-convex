@@ -124,6 +124,7 @@ export const stripeConvexTables = {
 
   /**
    * Subscriptions table - recurring subscription records.
+   * Includes payment method info as recommended by Theo.
    */
   sc_subscriptions: defineTable({
     email: v.string(),
@@ -131,10 +132,14 @@ export const stripeConvexTables = {
     status: subscriptionStatusValidator,
     stripeSubscriptionId: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
+    stripePriceId: v.optional(v.string()),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.number(),
     cancelAtPeriodEnd: v.optional(v.boolean()),
     cancelledAt: v.optional(v.number()),
+    // Payment method info (Theo recommends storing brand/last4)
+    paymentMethodBrand: v.optional(v.string()),
+    paymentMethodLast4: v.optional(v.string()),
     metadata: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
