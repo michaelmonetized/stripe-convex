@@ -404,16 +404,45 @@ try {
 }
 ```
 
-## Supported Events
+## Supported Events (19 Total)
 
+All events follow [Theo's Stripe recommendations](https://github.com/t3dotgg/stripe-recommendations).
+
+### Checkout Events
 | Event | Handler | Description |
 |-------|---------|-------------|
 | `checkout.session.completed` | `processCheckoutCompleted` | Payment/subscription created |
-| `customer.subscription.created` | (via checkout) | New subscription |
+
+### Subscription Lifecycle Events
+| Event | Handler | Description |
+|-------|---------|-------------|
+| `customer.subscription.created` | `processSubscriptionUpdate` | New subscription |
 | `customer.subscription.updated` | `processSubscriptionUpdate` | Status/period change |
 | `customer.subscription.deleted` | `processSubscriptionDeleted` | Subscription cancelled |
-| `payment_intent.succeeded` | Custom | Payment successful |
-| `payment_intent.payment_failed` | Custom | Payment failed |
-| `charge.refunded` | `processRefund` | Refund processed |
-| `invoice.paid` | Custom | Invoice paid |
+| `customer.subscription.paused` | Custom | Subscription paused |
+| `customer.subscription.resumed` | Custom | Subscription resumed |
+| `customer.subscription.pending_update_applied` | Custom | Pending update applied |
+| `customer.subscription.pending_update_expired` | Custom | Pending update expired |
+| `customer.subscription.trial_will_end` | Custom | Trial ending soon (3 days before) |
+
+### Invoice Events
+| Event | Handler | Description |
+|-------|---------|-------------|
+| `invoice.paid` | Custom | Invoice paid successfully |
+| `invoice.payment_succeeded` | Custom | Invoice payment succeeded |
 | `invoice.payment_failed` | Custom | Invoice payment failed |
+| `invoice.payment_action_required` | Custom | Payment requires action (3DS, etc.) |
+| `invoice.upcoming` | Custom | Upcoming invoice (for notifications) |
+| `invoice.marked_uncollectible` | Custom | Invoice marked uncollectible |
+
+### Payment Intent Events
+| Event | Handler | Description |
+|-------|---------|-------------|
+| `payment_intent.succeeded` | Custom | One-time payment successful |
+| `payment_intent.payment_failed` | Custom | One-time payment failed |
+| `payment_intent.canceled` | Custom | Payment cancelled |
+
+### Refund Events
+| Event | Handler | Description |
+|-------|---------|-------------|
+| `charge.refunded` | `processRefund` | Refund processed |

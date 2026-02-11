@@ -50,12 +50,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shilman/stripe-convex.git"
+    "url": "git+https://github.com/michaelmonetized/stripe-convex.git"
   },
   "bugs": {
-    "url": "https://github.com/shilman/stripe-convex/issues"
+    "url": "https://github.com/michaelmonetized/stripe-convex/issues"
   },
-  "homepage": "https://github.com/shilman/stripe-convex#readme",
+  "homepage": "https://github.com/michaelmonetized/stripe-convex#readme",
   "peerDependencies": {
     "convex": ">=1.0.0",
     "react": ">=18.0.0",
