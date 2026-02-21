@@ -6,6 +6,7 @@
 import { v } from "convex/values";
 import type { GenericQueryCtx, GenericDataModel } from "convex/server";
 import type { Plan, PlanFeature } from "../types/index.js";
+import { planValidator } from "./schema.js";
 
 /**
  * Checks if an email address has access to a specific feature or plan.
@@ -33,7 +34,7 @@ export const checkAccess = {
     email: v.string(),
     feature: v.optional(v.string()),
     plan: v.optional(v.string()),
-    plans: v.optional(v.any()), // Plans configuration
+    plans: v.optional(v.array(planValidator)), // Plans configuration
   },
   /**
    * @param ctx - Convex query context
@@ -142,7 +143,7 @@ export const checkAccess = {
 export const getUserPlans = {
   args: {
     email: v.string(),
-    plans: v.optional(v.any()),
+    plans: v.optional(v.array(planValidator)),
   },
   /**
    * @param ctx - Convex query context
@@ -204,7 +205,7 @@ export const getUserPlans = {
 export const getUserFeatures = {
   args: {
     email: v.string(),
-    plans: v.any(),
+    plans: v.array(planValidator),
   },
   /**
    * @param ctx - Convex query context

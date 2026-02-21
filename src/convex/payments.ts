@@ -5,7 +5,7 @@
 
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
-import { paymentStatusValidator } from "./schema.js";
+import { paymentStatusValidator, metadataValidator } from "./schema.js";
 
 /**
  * Creates a new payment record.
@@ -29,7 +29,7 @@ export const create = {
     stripePaymentIntentId: v.optional(v.string()),
     couponCode: v.optional(v.string()),
     discountAmount: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    metadata: metadataValidator,
   },
   /**
    * @param ctx - Convex mutation context

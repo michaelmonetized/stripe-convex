@@ -5,7 +5,7 @@
 
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
-import { subscriptionStatusValidator } from "./schema.js";
+import { subscriptionStatusValidator, metadataValidator } from "./schema.js";
 
 /**
  * Creates a new subscription record.
@@ -30,7 +30,7 @@ export const create = {
     stripeCustomerId: v.optional(v.string()),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.number(),
-    metadata: v.optional(v.any()),
+    metadata: metadataValidator,
   },
   /**
    * @param ctx - Convex mutation context
