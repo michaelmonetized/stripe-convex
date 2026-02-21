@@ -1,7 +1,14 @@
 // Schema exports
-export { stripeConvexTables } from "./schema.js";
-export type {
-  // Re-export validators for use in app schema
+export {
+  stripeConvexTables,
+  metadataValidator,
+  planValidator,
+  planFeatureValidator,
+  webhookEventDataValidator,
+  paymentStatusValidator,
+  subscriptionStatusValidator,
+  orderStatusValidator,
+  cartItemValidator,
 } from "./schema.js";
 
 // Function handlers (for use with internalMutation/internalQuery)

@@ -5,6 +5,7 @@
 
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
+import { metadataValidator } from "./schema.js";
 
 /**
  * Gets or creates a customer by email address.
@@ -143,7 +144,7 @@ export const update = {
     email: v.string(),
     name: v.optional(v.string()),
     stripeCustomerId: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    metadata: metadataValidator,
   },
   /**
    * @param ctx - Convex mutation context

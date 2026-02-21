@@ -5,6 +5,7 @@
 
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericDataModel } from "convex/server";
+import { metadataValidator, webhookEventDataValidator } from "./schema.js";
 
 /**
  * Checks if a webhook event has already been processed.
@@ -59,7 +60,7 @@ export const recordEvent = {
   args: {
     stripeEventId: v.string(),
     type: v.string(),
-    data: v.any(),
+    data: webhookEventDataValidator,
   },
   /**
    * @param ctx - Convex mutation context
@@ -168,7 +169,7 @@ export const processCheckoutCompleted = {
     subscriptionId: v.optional(v.string()),
     amountTotal: v.number(),
     currency: v.string(),
-    metadata: v.optional(v.any()),
+    metadata: metadataValidator,
   },
   /**
    * @param ctx - Convex mutation context
@@ -407,9 +408,13 @@ export const processRefund = {
     }
 
     if (!payment) {
-      // Try to find by charge ID if stored
-      const payments = await db.query("sc_payments").collect();
-      payment = payments.find((p: any) => p.stripeChargeId === args.chargeId);
+      // Find by charge ID using index
+      payment = await db
+        .query("sc_payments")
+        .withIndex("by_stripe_charge", (q: any) =>
+          q.eq("stripeChargeId", args.chargeId)
+        )
+        .first();
     }
 
     if (!payment) {

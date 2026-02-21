@@ -5,7 +5,7 @@
 
 import { v } from "convex/values";
 import type { GenericMutationCtx, GenericQueryCtx, GenericDataModel } from "convex/server";
-import { orderStatusValidator, cartItemValidator } from "./schema.js";
+import { orderStatusValidator, cartItemValidator, metadataValidator } from "./schema.js";
 
 /**
  * Creates a new order from cart items.
@@ -32,7 +32,7 @@ export const create = {
     discount: v.number(),
     total: v.number(),
     couponCode: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    metadata: metadataValidator,
   },
   /**
    * @param ctx - Convex mutation context
