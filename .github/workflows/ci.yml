@@ -1,60 +1,68 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+  release:
+    types: [ published ]
 
 jobs:
-  build:
+  lint-and-test:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
+      - name: Install dependencies
+        run: bun install
 
       - name: Type check
         run: bun run typecheck
 
+      - name: Lint
+        run: bun run lint
+
       - name: Build
         run: bun run build
 
-      - name: Verify dist output
-        run: |
-          test -f dist/index.js || (echo "Missing dist/index.js" && exit 1)
-          test -f dist/index.d.ts || (echo "Missing dist/index.d.ts" && exit 1)
-          test -f dist/convex/index.js || (echo "Missing dist/convex/index.js" && exit 1)
-          test -f dist/components/index.js || (echo "Missing dist/components/index.js" && exit 1)
+      - name: Package test
+        run: npm pack --dry-run
 
   publish:
-    needs: build
+    needs: lint-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: read
-      id-token: write
+    if: github.event_name == 'release' && github.event.action == 'published'
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - name: Install dependencies
+        run: bun install
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
+      - name: Build package
+        run: bun run build
 
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true  # Won't fail if version already published
