@@ -46,7 +46,11 @@
     "saas",
     "billing"
   ],
-  "author": "Michael Shilman",
+  "author": "Michael Hurley <michael@hurleyus.com>",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
