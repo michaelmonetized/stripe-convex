@@ -56,7 +56,7 @@ function useAddToCartContext() {
  * </AddToCart>
  */
 export function AddToCart({ children, className, isSubscription = false, planId }: AddToCartProps) {
-  const { addToCart, clearCart, checkout, setEmail } = useStripeConvex();
+  const { addToCart, clearCart, checkout } = useStripeConvex();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(0);

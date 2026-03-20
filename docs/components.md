@@ -87,7 +87,7 @@ import { Pay } from "stripe-convex";
 
 ## AddToCart (Compound Component)
 
-A compound component pattern for building add-to-cart UI.
+A compound component pattern for building add-to-cart UI. Supports both one-time purchases and subscriptions.
 
 ```tsx
 import {
@@ -96,8 +96,10 @@ import {
   CartItemPrice,
   CartItemDescription,
   CartItemButton,
+  CartItemPlan,
 } from "stripe-convex";
 
+// One-time purchase
 <AddToCart className="product-card">
   <CartItemTitle className="font-bold">Premium Widget</CartItemTitle>
   <CartItemPrice price={2999} className="text-green-600" />
@@ -105,6 +107,17 @@ import {
     A fantastic widget for all your needs
   </CartItemDescription>
   <CartItemButton className="btn-add">Add to Cart</CartItemButton>
+</AddToCart>
+
+// Subscription plan
+<AddToCart isSubscription planId="pro" className="plan-card">
+  <CartItemTitle className="font-bold">Pro Plan</CartItemTitle>
+  <CartItemPrice price={999} className="text-green-600" />
+  <CartItemPlan interval="month" className="text-gray-500" />
+  <CartItemDescription className="text-gray-600">
+    Unlimited access to all features
+  </CartItemDescription>
+  <CartItemButton className="btn-subscribe">Start with Pro Plan</CartItemButton>
 </AddToCart>
 ```
 
@@ -114,6 +127,8 @@ import {
 |------|------|----------|-------------|
 | `children` | `ReactNode` | Yes | Compound components |
 | `className` | `string` | No | CSS class name |
+| `isSubscription` | `boolean` | No | Whether this is a subscription item |
+| `planId` | `string` | No | Plan ID for subscription items |
 
 ### CartItemTitle Props
 
@@ -143,6 +158,19 @@ import {
 | `children` | `ReactNode` | Yes | Button text |
 | `onClick` | `() => void` | No | Additional click handler |
 | `className` | `string` | No | CSS class name |
+| `addToCart` | `boolean` | No | Force add-to-cart behavior for subscriptions (default: false) |
+
+**Note:** For subscriptions (`isSubscription={true}`), the button defaults to direct checkout behavior. Set `addToCart={true}` to add the subscription to the cart instead.
+
+### CartItemPlan Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `interval` | `"month" \| "year" \| "week" \| "day"` | No | Billing interval |
+| `children` | `ReactNode` | No | Custom content (overrides default interval text) |
+| `className` | `string` | No | CSS class name |
+
+**Display:** By default, renders the interval as `"/month"`, `"/year"`, etc. Pass custom children to override.
 
 ---
 
