@@ -16,6 +16,7 @@ export {
   CartItemPrice,
   CartItemDescription,
   CartItemButton,
+  CartItemPlan,
 } from "./AddToCart.js";
 export { Cart } from "./Cart.js";
 export { Checkout } from "./Checkout.js";

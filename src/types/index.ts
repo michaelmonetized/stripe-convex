@@ -462,6 +462,10 @@ export interface AddToCartProps {
   children: React.ReactNode;
   /** CSS class name */
   className?: string;
+  /** Whether this item is a subscription (vs one-time purchase) */
+  isSubscription?: boolean;
+  /** Plan ID for subscription items */
+  planId?: string;
 }
 
 /**
@@ -490,6 +494,19 @@ export interface CartItemPriceProps {
 export interface CartItemDescriptionProps {
   /** Description text */
   children: React.ReactNode;
+  /** CSS class name */
+  className?: string;
+}
+
+/**
+ * Props for CartItemPlan component.
+ * Displays plan/subscription details like billing interval.
+ */
+export interface CartItemPlanProps {
+  /** Plan interval (month, year, etc.) */
+  interval?: "month" | "year" | "week" | "day";
+  /** Custom children to display instead of default interval text */
+  children?: React.ReactNode;
   /** CSS class name */
   className?: string;
 }
