@@ -1,8 +1,8 @@
 # stripe-convex
 
-A complete Stripe + Convex payment system with email-based tracking, full cart functionality, and TypeScript-first coupon system.
+A Stripe + Convex payment library (email tracking, cart, coupons) — **source available, npm package unreleased**.
 
-[![npm version](https://img.shields.io/npm/v/stripe-convex.svg)](https://www.npmjs.com/package/stripe-convex)
+[![status](https://img.shields.io/badge/npm-unreleased-orange.svg)](https://github.com/michaelmonetized/stripe-convex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
@@ -18,13 +18,17 @@ A complete Stripe + Convex payment system with email-based tracking, full cart f
 
 ## Installation
 
+> **Unreleased.** This package is **not published** to the npm registry yet. Install from GitHub until a real npm release is cut:
+
 ```bash
-npm install stripe-convex
+npm install github:michaelmonetized/stripe-convex
 # or
-bun add stripe-convex
+bun add github:michaelmonetized/stripe-convex
 # or
-pnpm add stripe-convex
+pnpm add github:michaelmonetized/stripe-convex
 ```
+
+When published, the intended package name is `stripe-convex`.
 
 ### Peer Dependencies
 
