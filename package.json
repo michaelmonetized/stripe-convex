@@ -1,7 +1,7 @@
 {
   "name": "stripe-convex",
   "version": "0.1.0",
-  "description": "A reusable Stripe + Convex payment system with email-based tracking, cart functionality, and TypeScript-first coupon system",
+  "description": "A reusable Stripe + Convex payment system with email-based tracking, cart functionality, and TypeScript-first coupon system (UNRELEASED \u2014 not on npm yet)",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
